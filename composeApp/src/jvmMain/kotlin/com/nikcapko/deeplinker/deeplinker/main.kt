@@ -1,13 +1,13 @@
 package com.nikcapko.deeplinker.deeplinker
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 
 fun main() = application {
-    Window(
-        onCloseRequest = ::exitApplication,
-        title = "deeplinker",
-    ) {
-        App()
+    Window(onCloseRequest = ::exitApplication, title = "Deeplink Launcher") {
+        MaterialTheme {
+            DeepLinkLauncherApp()
+        }
     }
 }
