@@ -19,11 +19,14 @@ import com.nikcapko.deeplinker.deeplinker.icons.Cross
 import com.nikcapko.deeplinker.deeplinker.icons.Edit
 import com.nikcapko.deeplinker.deeplinker.icons.Export
 import com.nikcapko.deeplinker.deeplinker.icons.Import
+import com.nikcapko.deeplinker.deeplinker.models.AdbDevice
+import com.nikcapko.deeplinker.deeplinker.models.DeepLinkEntry
 import com.nikcapko.deeplinker.deeplinker.utils.AdbExecutor
 import com.nikcapko.deeplinker.deeplinker.utils.DeepLinkImportExport
 import com.nikcapko.deeplinker.deeplinker.utils.DeepLinkStorage
 import com.nikcapko.deeplinker.deeplinker.utils.FileDialogs
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -42,9 +45,35 @@ fun DeepLinkLauncherApp() {
     var showDeleteFavoriteItem by remember { mutableStateOf(false) }
     var favoriteItemToDelete by remember { mutableStateOf<DeepLinkEntry.FavoriteItem?>(null) }
 
+    var devices by remember { mutableStateOf<List<AdbDevice>>(emptyList()) }
+    var selectedDeviceId by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) {
         entry = withContext(Dispatchers.IO) {
             DeepLinkStorage.loadEntry()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        // Загружаем устройства при старте
+        devices = withContext(Dispatchers.IO) {
+            AdbExecutor.listDevices()
+        }
+        // Автоматически выбираем первое онлайн-устройство
+        selectedDeviceId = devices.firstOrNull { it.isOnline }?.id
+    }
+
+    // Обновляем каждые 5 секунд (опционально)
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(5000)
+            devices = withContext(Dispatchers.IO) {
+                AdbExecutor.listDevices()
+            }
+            // Сохраняем выбор, если устройство ещё подключено
+            if (selectedDeviceId != null && !devices.any { it.id == selectedDeviceId }) {
+                selectedDeviceId = devices.firstOrNull { it.isOnline }?.id
+            }
         }
     }
 
@@ -123,6 +152,45 @@ fun DeepLinkLauncherApp() {
             }
         }
 
+        if (devices.isNotEmpty()) {
+            var showDeviceMenu by remember { mutableStateOf(false) }
+            Box {
+                Button(onClick = { showDeviceMenu = true }) {
+                    Text(selectedDeviceId ?: "Нет устройств")
+                }
+
+                DropdownMenu(
+                    expanded = showDeviceMenu,
+                    onDismissRequest = { showDeviceMenu = false }
+                ) {
+                    if (devices.isEmpty()) {
+                        DropdownMenuItem(onClick = { showDeviceMenu = false }) {
+                            Text("Нет устройств")
+                        }
+                    } else {
+                        devices.forEach { device ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    selectedDeviceId = if (device.isOnline) device.id else null
+                                    showDeviceMenu = false
+                                },
+                                enabled = device.isOnline,
+                            ) {
+                                Text(
+                                    text = "${device.id} (${device.status})",
+                                    color = if (device.isOnline) MaterialTheme.colors.onSurface else MaterialTheme.colors.onSurface.copy(
+                                        alpha = 0.5f
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         // Поле ввода
         OutlinedTextField(
             value = inputUrl,
@@ -152,12 +220,12 @@ fun DeepLinkLauncherApp() {
         Row {
             Button(
                 onClick = {
-                    if (inputUrl.isNotBlank()) {
+                    if (inputUrl.isNotBlank() && selectedDeviceId != null) {
                         scope.launch {
                             val result = withContext(Dispatchers.IO) {
                                 AdbExecutor.launchDeepLink(inputUrl.trim())
                             }
-                            logOutput = result ?: "Запущено"
+                            logOutput = result ?: "Запущено на ${selectedDeviceId}"
                             // Сохраняем в историю
                             entry = entry.copy(
                                 history = entry.history
@@ -171,10 +239,12 @@ fun DeepLinkLauncherApp() {
                                 DeepLinkStorage.saveEntry(entry)
                             }
                         }
+                    } else if (selectedDeviceId == null) {
+                        logOutput = "Выберите устройство!"
                     }
                 },
                 modifier = Modifier.weight(1f),
-                enabled = inputUrl.isNotBlank(),
+                enabled = inputUrl.isNotBlank() && selectedDeviceId != null,
             ) {
                 Text("Запустить")
             }

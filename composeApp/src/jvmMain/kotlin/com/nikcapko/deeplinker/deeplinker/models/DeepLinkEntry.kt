@@ -1,4 +1,4 @@
-package com.nikcapko.deeplinker.deeplinker
+package com.nikcapko.deeplinker.deeplinker.models
 
 import kotlinx.serialization.Serializable
 
