@@ -4,7 +4,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class DeepLinkEntry(
-    val url: String,
-    val timestamp: Long = System.currentTimeMillis(),
-    val isFavorite: Boolean = false
-)
+    val history: List<HistoryItem> = emptyList(),
+    val favorite: List<FavoriteItem> = emptyList(),
+) {
+    @Serializable
+    data class HistoryItem(val link: String)
+
+    @Serializable
+    data class FavoriteItem(val name: String, val link: String)
+}

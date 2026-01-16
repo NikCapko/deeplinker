@@ -9,23 +9,28 @@ object DeepLinkStorage {
 
     init {
         storageFile.parentFile.mkdirs()
-        if (!storageFile.exists()) storageFile.writeText("[]")
-    }
-
-    fun loadEntries(): List<DeepLinkEntry> {
-        return try {
-            val content = storageFile.readText()
-            if (content.isBlank()) emptyList()
-            else json.decodeFromString(content)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            emptyList()
+        if (!storageFile.exists()) {
+            storageFile.writeText(json.encodeToString(DeepLinkEntry()))
         }
     }
 
-    fun saveEntries(entries: List<DeepLinkEntry>) {
+    fun loadEntry(): DeepLinkEntry {
+        return try {
+            val content = storageFile.readText()
+            if (content.isBlank()) {
+                DeepLinkEntry()
+            } else {
+                json.decodeFromString(content)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            DeepLinkEntry()
+        }
+    }
+
+    fun saveEntry(entry: DeepLinkEntry) {
         try {
-            storageFile.writeText(json.encodeToString(entries))
+            storageFile.writeText(json.encodeToString(entry))
         } catch (e: Exception) {
             e.printStackTrace()
         }
