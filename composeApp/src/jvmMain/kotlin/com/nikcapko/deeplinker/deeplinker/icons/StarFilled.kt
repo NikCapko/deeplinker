@@ -8,11 +8,11 @@ import androidx.compose.ui.unit.dp
 
 val StartFilled: ImageVector
     get() {
-        if (starFilled != null) {
-            return starFilled!!
+        if (_StartFilled != null) {
+            return _StartFilled!!
         }
-        starFilled = ImageVector.Builder(
-            name = "Star24DpE3E3E3FILL1Wght400GRAD0Opsz24",
+        _StartFilled = ImageVector.Builder(
+            name = "StartFilled",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
             viewportWidth = 960f,
@@ -34,8 +34,8 @@ val StartFilled: ImageVector
             }
         }.build()
 
-        return starFilled!!
+        return _StartFilled!!
     }
 
 @Suppress("ObjectPropertyName")
-private var starFilled: ImageVector? = null
+private var _StartFilled: ImageVector? = null

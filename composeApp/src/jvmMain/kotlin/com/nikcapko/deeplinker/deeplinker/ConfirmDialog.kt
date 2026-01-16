@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.rememberDialogState
@@ -47,11 +49,15 @@ fun ConfirmDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onCancel) {
+                    TextButton(
+                        modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                        onClick = onCancel,
+                    ) {
                         Text("Нет")
                     }
                     Spacer(Modifier.width(16.dp))
                     Button(
+                        modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                         onClick = onConfirm,
                     ) {
                         Text("Да")

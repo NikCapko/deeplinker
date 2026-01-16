@@ -11,9 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nikcapko.deeplinker.deeplinker.icons.Cross
+import com.nikcapko.deeplinker.deeplinker.icons.Edit
 import com.nikcapko.deeplinker.deeplinker.icons.Export
 import com.nikcapko.deeplinker.deeplinker.icons.Import
 import com.nikcapko.deeplinker.deeplinker.utils.AdbExecutor
@@ -131,11 +134,11 @@ fun DeepLinkLauncherApp() {
                 if (inputUrl.isNotBlank()) {
                     Icon(
                         modifier = Modifier
-                            .size(24.dp)
                             .clip(CircleShape)
-                            .clickable {
-                                inputUrl = ""
-                            },
+                            .pointerHoverIcon(PointerIcon.Hand)
+                            .clickable { inputUrl = "" }
+                            .padding(4.dp)
+                            .size(24.dp),
                         imageVector = Cross,
                         contentDescription = "clear input",
                     )
@@ -170,7 +173,8 @@ fun DeepLinkLauncherApp() {
                         }
                     }
                 },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enabled = inputUrl.isNotBlank(),
             ) {
                 Text("Запустить")
             }
@@ -184,7 +188,8 @@ fun DeepLinkLauncherApp() {
                         showFavoriteDialog = true
                     }
                 },
-                modifier = Modifier.weight(0.5f)
+                modifier = Modifier.weight(0.5f),
+                enabled = inputUrl.isNotBlank(),
             ) {
                 Text("★")
             }
@@ -210,14 +215,18 @@ fun DeepLinkLauncherApp() {
                         text = "История",
                         fontWeight = FontWeight.Bold,
                     )
-                    Text(
-                        modifier = Modifier.clickable {
-                            showDeleteAllHistory = true
-                        },
-                        text = "Очистить",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Blue,
-                    )
+                    if (entry.history.isNotEmpty()) {
+                        Text(
+                            modifier = Modifier
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable {
+                                    showDeleteAllHistory = true
+                                },
+                            text = "Очистить",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Blue,
+                        )
+                    }
                 }
                 LazyColumn {
                     items(entry.history) { item ->
@@ -247,20 +256,25 @@ fun DeepLinkLauncherApp() {
                         text = "Избранное",
                         fontWeight = FontWeight.Bold,
                     )
-                    Text(
-                        modifier = Modifier.clickable {
-                            showDeleteAllFavorite = true
-                        },
-                        text = "Удалить все",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Blue,
-                    )
+                    if (entry.favorites.isNotEmpty()) {
+                        Text(
+                            modifier = Modifier
+                                .pointerHoverIcon(PointerIcon.Hand)
+                                .clickable {
+                                    showDeleteAllFavorite = true
+                                },
+                            text = "Удалить все",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Blue,
+                        )
+                    }
                 }
                 LazyColumn {
                     items(entry.favorites) { item ->
                         DeepLinkFavoriteItem(
                             item = item,
                             onClick = { inputUrl = item.deeplink },
+                            onEditClick = {},
                             onDeleteClick = {
                                 favoriteItemToDelete = item
                                 showDeleteFavoriteItem = true
@@ -382,9 +396,11 @@ fun DeepLinkHistoryItem(
             )
             Icon(
                 modifier = Modifier
-                    .size(24.dp)
                     .clip(CircleShape)
-                    .clickable { onDeleteClick() },
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { onDeleteClick() }
+                    .padding(4.dp)
+                    .size(24.dp),
                 imageVector = Cross,
                 contentDescription = "delete from history",
             )
@@ -396,6 +412,7 @@ fun DeepLinkHistoryItem(
 fun DeepLinkFavoriteItem(
     item: DeepLinkEntry.FavoriteItem,
     onClick: () -> Unit,
+    onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
     Card(
@@ -416,9 +433,22 @@ fun DeepLinkFavoriteItem(
             )
             Icon(
                 modifier = Modifier
-                    .size(24.dp)
                     .clip(CircleShape)
-                    .clickable { onDeleteClick() },
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { onEditClick() }
+                    .padding(4.dp)
+                    .size(24.dp),
+                imageVector = Edit,
+                contentDescription = "edit favorite",
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable { onDeleteClick() }
+                    .padding(4.dp)
+                    .size(24.dp),
                 imageVector = Cross,
                 contentDescription = "delete from favorite",
             )

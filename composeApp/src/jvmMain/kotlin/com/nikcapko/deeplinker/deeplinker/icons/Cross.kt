@@ -8,11 +8,11 @@ import androidx.compose.ui.unit.dp
 
 val Cross: ImageVector
     get() {
-        if (cross != null) {
-            return cross!!
+        if (_Cross != null) {
+            return _Cross!!
         }
-        cross = ImageVector.Builder(
-            name = "Close24DpE3E3E3FILL0Wght400GRAD0Opsz24",
+        _Cross = ImageVector.Builder(
+            name = "Cross",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
             viewportWidth = 960f,
@@ -36,8 +36,8 @@ val Cross: ImageVector
             }
         }.build()
 
-        return cross!!
+        return _Cross!!
     }
 
 @Suppress("ObjectPropertyName")
-private var cross: ImageVector? = null
+private var _Cross: ImageVector? = null

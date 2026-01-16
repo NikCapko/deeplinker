@@ -8,11 +8,11 @@ import androidx.compose.ui.unit.dp
 
 val Export: ImageVector
     get() {
-        if (export != null) {
-            return export!!
+        if (_Export != null) {
+            return _Export!!
         }
-        export = ImageVector.Builder(
-            name = "Upload24DpE3E3E3FILL0Wght400GRAD0Opsz24",
+        _Export = ImageVector.Builder(
+            name = "Export",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
             viewportWidth = 960f,
@@ -47,8 +47,8 @@ val Export: ImageVector
             }
         }.build()
 
-        return export!!
+        return _Export!!
     }
 
 @Suppress("ObjectPropertyName")
-private var export: ImageVector? = null
+private var _Export: ImageVector? = null

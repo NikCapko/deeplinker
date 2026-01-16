@@ -8,11 +8,11 @@ import androidx.compose.ui.unit.dp
 
 val Import: ImageVector
     get() {
-        if (import != null) {
-            return import!!
+        if (_Import != null) {
+            return _Import!!
         }
-        import = ImageVector.Builder(
-            name = "Download24DpE3E3E3FILL0Wght400GRAD0Opsz24",
+        _Import = ImageVector.Builder(
+            name = "Import",
             defaultWidth = 24.dp,
             defaultHeight = 24.dp,
             viewportWidth = 960f,
@@ -47,8 +47,8 @@ val Import: ImageVector
             }
         }.build()
 
-        return import!!
+        return _Import!!
     }
 
 @Suppress("ObjectPropertyName")
-private var import: ImageVector? = null
+private var _Import: ImageVector? = null
