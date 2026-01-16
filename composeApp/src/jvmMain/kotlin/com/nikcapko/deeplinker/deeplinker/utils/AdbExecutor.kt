@@ -1,8 +1,6 @@
 package com.nikcapko.deeplinker.deeplinker.utils
 
 import com.nikcapko.deeplinker.deeplinker.models.AdbDevice
-import java.io.BufferedReader
-import java.io.InputStreamReader
 
 object AdbExecutor {
     fun launchDeepLink(url: String, deviceId: String? = null): String? {
@@ -37,7 +35,7 @@ object AdbExecutor {
 
     fun listDevices(): List<AdbDevice> {
         return try {
-            val process = ProcessBuilder("adb", "devices")
+            val process = ProcessBuilder("adb", "devices", "-l")
                 .redirectErrorStream(true)
                 .start()
 
@@ -51,6 +49,27 @@ object AdbExecutor {
         }
     }
 
+    fun getAndroidVersion(serial: String): String? {
+        return try {
+            val process = ProcessBuilder(
+                "adb",
+                "-s",
+                serial,
+                "shell",
+                "getprop",
+                "ro.build.version.release",
+            )
+                .redirectErrorStream(true)
+                .start()
+
+            val output = process.inputStream.bufferedReader().readText().trim()
+            return output
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
     private fun parseAdbDevicesOutput(output: String): List<AdbDevice> {
         val devices = mutableListOf<AdbDevice>()
         val lines = output.lines()
@@ -59,12 +78,18 @@ object AdbExecutor {
             if (line.isBlank()) continue
             if (line.startsWith("*") || line.startsWith("adb")) continue
 
-            val parts = line.split(Regex("\\s+"), limit = 2)
-            if (parts.size == 2) {
-                val id = parts[0]
-                val status = parts[1]
-                devices.add(AdbDevice(id, status))
-            }
+            val parts = line.split(Regex("\\s+"))
+            val serial = parts[0]
+            val model = parts.find { it.startsWith("model:") }?.substringAfter("model:")?.replace("_", "")
+            val android = getAndroidVersion(serial)
+            devices.add(
+                AdbDevice(
+                    serial = serial,
+                    model = model ?: "Unknown",
+                    android = android ?: "?",
+                    status = parts[1],
+                ),
+            )
         }
         return devices
     }

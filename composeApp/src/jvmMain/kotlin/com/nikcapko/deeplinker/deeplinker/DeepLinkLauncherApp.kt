@@ -46,7 +46,10 @@ fun DeepLinkLauncherApp() {
     var favoriteItemToDelete by remember { mutableStateOf<DeepLinkEntry.FavoriteItem?>(null) }
 
     var devices by remember { mutableStateOf<List<AdbDevice>>(emptyList()) }
-    var selectedDeviceId by remember { mutableStateOf<String?>(null) }
+    var selectedDevice by remember { mutableStateOf<AdbDevice?>(null) }
+
+    var showChangeDeeplink by remember { mutableStateOf(false) }
+    var selectedDeeplink by remember { mutableStateOf<DeepLinkEntry.FavoriteItem?>(null) }
 
     LaunchedEffect(Unit) {
         entry = withContext(Dispatchers.IO) {
@@ -60,7 +63,7 @@ fun DeepLinkLauncherApp() {
             AdbExecutor.listDevices()
         }
         // Автоматически выбираем первое онлайн-устройство
-        selectedDeviceId = devices.firstOrNull { it.isOnline }?.id
+        selectedDevice = devices.firstOrNull { it.isOnline }
     }
 
     // Обновляем каждые 5 секунд (опционально)
@@ -71,8 +74,8 @@ fun DeepLinkLauncherApp() {
                 AdbExecutor.listDevices()
             }
             // Сохраняем выбор, если устройство ещё подключено
-            if (selectedDeviceId != null && !devices.any { it.id == selectedDeviceId }) {
-                selectedDeviceId = devices.firstOrNull { it.isOnline }?.id
+            if (selectedDevice != null && !devices.any { it.serial == selectedDevice?.serial }) {
+                selectedDevice = devices.firstOrNull { it.isOnline }
             }
         }
     }
@@ -154,34 +157,50 @@ fun DeepLinkLauncherApp() {
 
         if (devices.isNotEmpty()) {
             var showDeviceMenu by remember { mutableStateOf(false) }
-            Box {
-                Button(onClick = { showDeviceMenu = true }) {
-                    Text(selectedDeviceId ?: "Нет устройств")
-                }
 
-                DropdownMenu(
-                    expanded = showDeviceMenu,
-                    onDismissRequest = { showDeviceMenu = false }
-                ) {
-                    if (devices.isEmpty()) {
-                        DropdownMenuItem(onClick = { showDeviceMenu = false }) {
-                            Text("Нет устройств")
-                        }
-                    } else {
-                        devices.forEach { device ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    modifier = Modifier.weight(1f),
+                    fontWeight = FontWeight.Bold,
+                    text = "Устройство:",
+                )
+                Box {
+                    Button(onClick = { showDeviceMenu = true }) {
+                        Text(
+                            text = selectedDevice?.getInfo() ?: "Нет устройств",
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showDeviceMenu,
+                        onDismissRequest = { showDeviceMenu = false },
+                    ) {
+                        if (devices.isEmpty()) {
                             DropdownMenuItem(
-                                onClick = {
-                                    selectedDeviceId = if (device.isOnline) device.id else null
-                                    showDeviceMenu = false
-                                },
-                                enabled = device.isOnline,
+                                onClick = { showDeviceMenu = false }
                             ) {
-                                Text(
-                                    text = "${device.id} (${device.status})",
-                                    color = if (device.isOnline) MaterialTheme.colors.onSurface else MaterialTheme.colors.onSurface.copy(
-                                        alpha = 0.5f
+                                Text("Нет устройств")
+                            }
+                        } else {
+                            devices.forEach { device ->
+                                DropdownMenuItem(
+                                    onClick = {
+                                        selectedDevice = if (device.isOnline) device else null
+                                        showDeviceMenu = false
+                                    },
+                                    enabled = device.isOnline,
+                                ) {
+                                    Text(
+                                        text = device.getInfo(),
+                                        color = if (device.isOnline) {
+                                            MaterialTheme.colors.onSurface
+                                        } else {
+                                            MaterialTheme.colors.onSurface.copy(alpha = 0.5f)
+                                        },
                                     )
-                                )
+                                }
                             }
                         }
                     }
@@ -220,12 +239,27 @@ fun DeepLinkLauncherApp() {
         Row {
             Button(
                 onClick = {
-                    if (inputUrl.isNotBlank() && selectedDeviceId != null) {
+                    if (inputUrl.isNotBlank()) {
+                        urlToFavorite = inputUrl
+                        showFavoriteDialog = true
+                    }
+                },
+                modifier = Modifier.weight(0.5f),
+                enabled = inputUrl.isNotBlank(),
+            ) {
+                Text("★")
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Button(
+                onClick = {
+                    if (inputUrl.isNotBlank() && selectedDevice != null) {
                         scope.launch {
                             val result = withContext(Dispatchers.IO) {
-                                AdbExecutor.launchDeepLink(inputUrl.trim())
+                                AdbExecutor.launchDeepLink(inputUrl.trim(), selectedDevice?.serial)
                             }
-                            logOutput = result ?: "Запущено на ${selectedDeviceId}"
+                            logOutput = result ?: "Запущено на ${selectedDevice?.getInfo()}"
                             // Сохраняем в историю
                             entry = entry.copy(
                                 history = entry.history
@@ -239,29 +273,14 @@ fun DeepLinkLauncherApp() {
                                 DeepLinkStorage.saveEntry(entry)
                             }
                         }
-                    } else if (selectedDeviceId == null) {
+                    } else if (selectedDevice == null) {
                         logOutput = "Выберите устройство!"
                     }
                 },
                 modifier = Modifier.weight(1f),
-                enabled = inputUrl.isNotBlank() && selectedDeviceId != null,
+                enabled = inputUrl.isNotBlank() && selectedDevice != null,
             ) {
                 Text("Запустить")
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Button(
-                onClick = {
-                    if (inputUrl.isNotBlank()) {
-                        urlToFavorite = inputUrl
-                        showFavoriteDialog = true
-                    }
-                },
-                modifier = Modifier.weight(0.5f),
-                enabled = inputUrl.isNotBlank(),
-            ) {
-                Text("★")
             }
         }
 
@@ -298,6 +317,7 @@ fun DeepLinkLauncherApp() {
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
                 LazyColumn {
                     items(entry.history) { item ->
                         DeepLinkHistoryItem(
@@ -339,12 +359,16 @@ fun DeepLinkLauncherApp() {
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
                 LazyColumn {
                     items(entry.favorites) { item ->
                         DeepLinkFavoriteItem(
                             item = item,
                             onClick = { inputUrl = item.deeplink },
-                            onEditClick = {},
+                            onEditClick = {
+                                selectedDeeplink = item
+                                showChangeDeeplink = true
+                            },
                             onDeleteClick = {
                                 favoriteItemToDelete = item
                                 showDeleteFavoriteItem = true
@@ -375,6 +399,34 @@ fun DeepLinkLauncherApp() {
                 }
             },
         )
+    }
+
+    if (showChangeDeeplink) {
+        if (selectedDeeplink != null) {
+            FavoriteChangeDialog(
+                deeplink = selectedDeeplink!!,
+                onDismiss = {
+                    showChangeDeeplink = false
+                    selectedDeeplink = null
+                },
+                onSave = { item ->
+                    showFavoriteDialog = false
+
+                    // Обновляем список
+                    entry = entry.copy(
+                        favorites = entry.favorites.toMutableList().apply {
+                            val position = indexOf(selectedDeeplink)
+                            removeAt(position)
+                            add(position, item)
+                        }
+                    )
+                    selectedDeeplink = null
+                    scope.launch(Dispatchers.IO) {
+                        DeepLinkStorage.saveEntry(entry)
+                    }
+                },
+            )
+        }
     }
 
     if (showDeleteAllHistory) {
