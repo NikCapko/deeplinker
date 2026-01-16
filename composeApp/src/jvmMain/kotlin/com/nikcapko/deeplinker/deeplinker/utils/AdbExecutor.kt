@@ -1,4 +1,4 @@
-package com.nikcapko.deeplinker.deeplinker
+package com.nikcapko.deeplinker.deeplinker.utils
 
 import java.io.BufferedReader
 import java.io.InputStreamReader

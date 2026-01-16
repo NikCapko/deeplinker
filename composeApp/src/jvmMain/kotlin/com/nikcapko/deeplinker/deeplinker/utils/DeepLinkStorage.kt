@@ -1,5 +1,6 @@
-package com.nikcapko.deeplinker.deeplinker
+package com.nikcapko.deeplinker.deeplinker.utils
 
+import com.nikcapko.deeplinker.deeplinker.DeepLinkEntry
 import kotlinx.serialization.json.Json
 import java.io.File
 

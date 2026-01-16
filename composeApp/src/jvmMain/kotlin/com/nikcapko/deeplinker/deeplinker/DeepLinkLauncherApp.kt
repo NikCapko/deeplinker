@@ -16,6 +16,10 @@ import androidx.compose.ui.unit.dp
 import com.nikcapko.deeplinker.deeplinker.icons.Cross
 import com.nikcapko.deeplinker.deeplinker.icons.Export
 import com.nikcapko.deeplinker.deeplinker.icons.Import
+import com.nikcapko.deeplinker.deeplinker.utils.AdbExecutor
+import com.nikcapko.deeplinker.deeplinker.utils.DeepLinkImportExport
+import com.nikcapko.deeplinker.deeplinker.utils.DeepLinkStorage
+import com.nikcapko.deeplinker.deeplinker.utils.FileDialogs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,9 +35,6 @@ fun DeepLinkLauncherApp() {
 
     var showDeleteAllHistory by remember { mutableStateOf(false) }
     var showDeleteAllFavorite by remember { mutableStateOf(false) }
-
-    var showDeleteHistoryItem by remember { mutableStateOf(false) }
-    var historyItemToDelete by remember { mutableStateOf<DeepLinkEntry.HistoryItem?>(null) }
 
     var showDeleteFavoriteItem by remember { mutableStateOf(false) }
     var favoriteItemToDelete by remember { mutableStateOf<DeepLinkEntry.FavoriteItem?>(null) }
@@ -52,7 +53,29 @@ fun DeepLinkLauncherApp() {
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = {
-
+                    scope.launch(Dispatchers.IO) {
+                        val file = withContext(Dispatchers.Main) {
+                            FileDialogs.showOpenDialog()
+                        }
+                        if (file != null) {
+                            try {
+                                val imported = DeepLinkImportExport.importFromFile(file)
+                                // Объединяем: существующие + новые импортированные (без дублей по URL)
+                                val merged = DeepLinkEntry(
+                                    history = (entry.history + imported.history).distinctBy { it },
+                                    favorites = (entry.favorites + imported.favorites).distinctBy { it.deeplink },
+                                )
+                                entry = merged
+                                withContext(Dispatchers.IO) {
+                                    DeepLinkStorage.saveEntry(entry)
+                                }
+                                logOutput =
+                                    "Добавлено:\n• Избранное: ${imported.favorites.size}\n• История: ${imported.history.size}"
+                            } catch (e: Exception) {
+                                logOutput = "Ошибка импорта: ${e.message}"
+                            }
+                        }
+                    }
                 },
             ) {
                 Row(
@@ -71,7 +94,16 @@ fun DeepLinkLauncherApp() {
             Button(
                 modifier = Modifier.weight(1f),
                 onClick = {
-
+                    scope.launch(Dispatchers.IO) {
+                        val file = withContext(Dispatchers.Main) {
+                            FileDialogs.showSaveDialog()
+                        }
+                        if (file != null) {
+                            DeepLinkImportExport.exportToFile(entry, file)
+                            // Опционально: показать уведомление
+                            logOutput = "Экспортировано: ${file.name}"
+                        }
+                    }
                 },
             ) {
                 Row(
@@ -126,10 +158,10 @@ fun DeepLinkLauncherApp() {
                             // Сохраняем в историю
                             entry = entry.copy(
                                 history = entry.history
-                                    .filter { it.link != inputUrl }
+                                    .filter { it != inputUrl }
                                     .toMutableList()
                                     .apply {
-                                        add(0, DeepLinkEntry.HistoryItem(inputUrl))
+                                        add(0, inputUrl)
                                     }
                             )
                             withContext(Dispatchers.IO) {
@@ -191,10 +223,16 @@ fun DeepLinkLauncherApp() {
                     items(entry.history) { item ->
                         DeepLinkHistoryItem(
                             item = item,
-                            onClick = { inputUrl = item.link },
+                            onClick = { inputUrl = item },
                             onDeleteClick = {
-                                historyItemToDelete = item
-                                showDeleteHistoryItem = true
+                                entry = entry.copy(
+                                    history = entry.history.toMutableList().apply {
+                                        remove(item)
+                                    },
+                                )
+                                scope.launch(Dispatchers.IO) {
+                                    DeepLinkStorage.saveEntry(entry)
+                                }
                             },
                         )
                     }
@@ -219,10 +257,10 @@ fun DeepLinkLauncherApp() {
                     )
                 }
                 LazyColumn {
-                    items(entry.favorite) { item ->
+                    items(entry.favorites) { item ->
                         DeepLinkFavoriteItem(
                             item = item,
-                            onClick = { inputUrl = item.link },
+                            onClick = { inputUrl = item.deeplink },
                             onDeleteClick = {
                                 favoriteItemToDelete = item
                                 showDeleteFavoriteItem = true
@@ -243,7 +281,7 @@ fun DeepLinkLauncherApp() {
 
                 // Обновляем список
                 entry = entry.copy(
-                    favorite = entry.favorite.toMutableList().apply {
+                    favorites = entry.favorites.toMutableList().apply {
                         add(0, favorite)
                     }
                 )
@@ -285,7 +323,7 @@ fun DeepLinkLauncherApp() {
 
                 // Обновляем список
                 entry = entry.copy(
-                    favorite = emptyList(),
+                    favorites = emptyList(),
                 )
 
                 scope.launch(Dispatchers.IO) {
@@ -299,14 +337,14 @@ fun DeepLinkLauncherApp() {
         favoriteItemToDelete?.let { item ->
             ConfirmDialog(
                 title = "Удалить избранное:",
-                message = "${item.name} → ${item.link}",
+                message = "${item.name} → ${item.deeplink}",
                 onCancel = { showDeleteFavoriteItem = false },
                 onConfirm = {
                     showDeleteFavoriteItem = false
 
                     // Обновляем список
                     entry = entry.copy(
-                        favorite = entry.favorite.toMutableList().apply {
+                        favorites = entry.favorites.toMutableList().apply {
                             remove(item)
                         },
                     )
@@ -322,7 +360,7 @@ fun DeepLinkLauncherApp() {
 
 @Composable
 fun DeepLinkHistoryItem(
-    item: DeepLinkEntry.HistoryItem,
+    item: String,
     onClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
@@ -339,17 +377,17 @@ fun DeepLinkHistoryItem(
         ) {
             Text(
                 modifier = Modifier.weight(1f),
-                text = item.link,
+                text = item,
                 maxLines = 1,
             )
-//            Icon(
-//                modifier = Modifier
-//                    .size(24.dp)
-//                    .clip(CircleShape)
-//                    .clickable { onDeleteClick() },
-//                imageVector = Cross,
-//                contentDescription = "clear input",
-//            )
+            Icon(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .clickable { onDeleteClick() },
+                imageVector = Cross,
+                contentDescription = "delete from history",
+            )
         }
     }
 }
@@ -373,7 +411,7 @@ fun DeepLinkFavoriteItem(
         ) {
             Text(
                 modifier = Modifier.weight(1f),
-                text = "${item.name} → ${item.link}",
+                text = "${item.name} → ${item.deeplink}",
                 maxLines = 1,
             )
             Icon(
@@ -382,7 +420,7 @@ fun DeepLinkFavoriteItem(
                     .clip(CircleShape)
                     .clickable { onDeleteClick() },
                 imageVector = Cross,
-                contentDescription = "clear input",
+                contentDescription = "delete from favorite",
             )
         }
     }
