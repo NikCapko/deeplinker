@@ -1,4 +1,4 @@
-package com.nikcapko.deeplinker.deeplinker
+package com.nikcapko.deeplinker.deeplinker.dialogs
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,8 +8,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
+import androidx.compose.ui.window.rememberDialogState
 import com.nikcapko.deeplinker.deeplinker.icons.Cross
 import com.nikcapko.deeplinker.deeplinker.models.DeepLinkEntry
 
@@ -22,7 +25,13 @@ fun FavoriteChangeDialog(
     var deeplinkName by remember { mutableStateOf(deeplink.name) }
     var deeplinkUrl by remember { mutableStateOf(deeplink.deeplink) }
 
-    DialogWindow(onCloseRequest = onDismiss) {
+    DialogWindow(
+        onCloseRequest = onDismiss,
+        state = rememberDialogState(
+            width = 700.dp,
+            height = 350.dp,
+        )
+    ) {
         Surface(
             shape = MaterialTheme.shapes.medium,
             tonalElevation = 4.dp,
@@ -41,15 +50,16 @@ fun FavoriteChangeDialog(
                     value = deeplinkName,
                     onValueChange = { deeplinkName = it },
                     label = { Text("Название") },
+                    singleLine = true,
+                    maxLines = 1,
                     trailingIcon = {
                         if (deeplinkName.isNotBlank()) {
                             Icon(
                                 modifier = Modifier
                                     .size(24.dp)
                                     .clip(CircleShape)
-                                    .clickable {
-                                        deeplinkName = ""
-                                    },
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable { deeplinkName = "" },
                                 imageVector = Cross,
                                 contentDescription = "clear deeplink name input",
                             )
@@ -57,20 +67,23 @@ fun FavoriteChangeDialog(
                     }
                 )
 
+                Spacer(Modifier.height(16.dp))
+
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
                     value = deeplinkUrl,
                     onValueChange = { deeplinkUrl = it },
                     label = { Text("Deeplink URL") },
+                    singleLine = true,
+                    maxLines = 1,
                     trailingIcon = {
                         if (deeplinkUrl.isNotBlank()) {
                             Icon(
                                 modifier = Modifier
                                     .size(24.dp)
                                     .clip(CircleShape)
-                                    .clickable {
-                                        deeplinkUrl = ""
-                                    },
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable { deeplinkUrl = "" },
                                 imageVector = Cross,
                                 contentDescription = "clear deeplink url input",
                             )
@@ -84,17 +97,23 @@ fun FavoriteChangeDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    TextButton(
+                        modifier = Modifier
+                            .pointerHoverIcon(PointerIcon.Hand),
+                        onClick = onDismiss,
+                    ) {
                         Text("Отмена")
                     }
                     Spacer(Modifier.width(16.dp))
                     Button(
+                        modifier = Modifier
+                            .pointerHoverIcon(PointerIcon.Hand),
                         onClick = {
                             if (deeplinkName.isNotBlank() && deeplinkUrl.isNotBlank()) {
                                 onSave(DeepLinkEntry.FavoriteItem(deeplinkName, deeplinkUrl))
                             }
                         },
-                        enabled = deeplinkName.isNotBlank() && deeplinkUrl.isNotBlank()
+                        enabled = deeplinkName.isNotBlank() && deeplinkUrl.isNotBlank(),
                     ) {
                         Text("Сохранить")
                     }

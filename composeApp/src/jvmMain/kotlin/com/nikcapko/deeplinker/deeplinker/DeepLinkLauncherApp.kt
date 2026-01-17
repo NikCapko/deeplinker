@@ -15,6 +15,9 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nikcapko.deeplinker.deeplinker.dialogs.ConfirmDialog
+import com.nikcapko.deeplinker.deeplinker.dialogs.FavoriteChangeDialog
+import com.nikcapko.deeplinker.deeplinker.dialogs.FavoriteNameDialog
 import com.nikcapko.deeplinker.deeplinker.icons.Cross
 import com.nikcapko.deeplinker.deeplinker.icons.Edit
 import com.nikcapko.deeplinker.deeplinker.icons.Export
@@ -36,7 +39,7 @@ fun DeepLinkLauncherApp() {
     var logOutput by remember { mutableStateOf("") }
     var entry by remember { mutableStateOf(DeepLinkEntry()) }
 
-    var showFavoriteDialog by remember { mutableStateOf(false) }
+    var showAddFavoriteDialog by remember { mutableStateOf(false) }
     var urlToFavorite by remember { mutableStateOf("") }
 
     var showDeleteAllHistory by remember { mutableStateOf(false) }
@@ -241,7 +244,7 @@ fun DeepLinkLauncherApp() {
                 onClick = {
                     if (inputUrl.isNotBlank()) {
                         urlToFavorite = inputUrl
-                        showFavoriteDialog = true
+                        showAddFavoriteDialog = true
                     }
                 },
                 modifier = Modifier.weight(0.5f),
@@ -380,11 +383,11 @@ fun DeepLinkLauncherApp() {
         }
     }
 
-    if (showFavoriteDialog) {
+    if (showAddFavoriteDialog) {
         FavoriteNameDialog(
-            onDismiss = { showFavoriteDialog = false },
+            onDismiss = { showAddFavoriteDialog = false },
             onSave = { name ->
-                showFavoriteDialog = false
+                showAddFavoriteDialog = false
                 val favorite = DeepLinkEntry.FavoriteItem(name, urlToFavorite)
 
                 // Обновляем список
@@ -410,7 +413,7 @@ fun DeepLinkLauncherApp() {
                     selectedDeeplink = null
                 },
                 onSave = { item ->
-                    showFavoriteDialog = false
+                    showAddFavoriteDialog = false
 
                     // Обновляем список
                     entry = entry.copy(

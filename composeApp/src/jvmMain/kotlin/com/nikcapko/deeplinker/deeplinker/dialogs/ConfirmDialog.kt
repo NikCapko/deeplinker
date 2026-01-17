@@ -1,4 +1,4 @@
-package com.nikcapko.deeplinker.deeplinker
+package com.nikcapko.deeplinker.deeplinker.dialogs
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*

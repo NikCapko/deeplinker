@@ -1,4 +1,4 @@
-package com.nikcapko.deeplinker.deeplinker
+package com.nikcapko.deeplinker.deeplinker.dialogs
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,8 +8,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindow
+import androidx.compose.ui.window.rememberDialogState
 import com.nikcapko.deeplinker.deeplinker.icons.Cross
 
 @Composable
@@ -19,7 +22,13 @@ fun FavoriteNameDialog(
 ) {
     var name by remember { mutableStateOf("") }
 
-    DialogWindow(onCloseRequest = onDismiss) {
+    DialogWindow(
+        onCloseRequest = onDismiss,
+        state = rememberDialogState(
+            width = 500.dp,
+            height = 250.dp,
+        ),
+    ) {
         Surface(
             shape = MaterialTheme.shapes.medium,
             tonalElevation = 4.dp,
@@ -44,9 +53,8 @@ fun FavoriteNameDialog(
                                 modifier = Modifier
                                     .size(24.dp)
                                     .clip(CircleShape)
-                                    .clickable {
-                                        name = ""
-                                    },
+                                    .pointerHoverIcon(PointerIcon.Hand)
+                                    .clickable { name = "" },
                                 imageVector = Cross,
                                 contentDescription = "clear input",
                             )
@@ -60,11 +68,17 @@ fun FavoriteNameDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                 ) {
-                    TextButton(onClick = onDismiss) {
+                    TextButton(
+                        modifier = Modifier
+                            .pointerHoverIcon(PointerIcon.Hand),
+                        onClick = onDismiss,
+                    ) {
                         Text("Отмена")
                     }
                     Spacer(Modifier.width(16.dp))
                     Button(
+                        modifier = Modifier
+                            .pointerHoverIcon(PointerIcon.Hand),
                         onClick = {
                             if (name.isNotBlank()) {
                                 onSave(name.trim())
