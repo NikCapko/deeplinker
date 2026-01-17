@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -291,7 +292,30 @@ fun DeepLinkLauncherApp() {
 
         // Лог (опционально)
         if (logOutput.isNotBlank()) {
-            Text("Результат:\n$logOutput", modifier = Modifier.fillMaxWidth())
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                SelectionContainer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 32.dp),
+                ) {
+                    Text(
+                        text = "Результат:\n$logOutput",
+                    )
+                }
+                Icon(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable { logOutput = "" }
+                        .padding(2.dp)
+                        .size(16.dp)
+                        .align(Alignment.TopStart),
+                    imageVector = Cross,
+                    contentDescription = "clear log output",
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
         }
 
